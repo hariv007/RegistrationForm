@@ -1,0 +1,166 @@
+﻿@model MultipleCourses.Models.RegistrationForm
+
+<form method="post">
+    <div>
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="mb-3 mt-3">
+        <label class="form-label" asp-for="Name"></label>
+        <input class="form-control" id="name" required />
+       
+    </div>
+    <div>
+        <span asp-validation-for="Age" class="text-danger"></span>
+    </div>
+    <div class="mb-3 mt-3">
+       
+        <label class="form-label" asp-for="Age"></label>
+        <input class="form-control" id="age" required/>
+        
+    </div>
+    <div class="mb-3 mt-3">
+        <h3>Qualifications</h3>
+        <table class="table" id="CoursesTable">
+            <thead>
+                <tr>
+                    <th>Course Name</th>
+                    <th>University</th>
+                    <th>Year of Pass</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.qualifications != null)
+                {
+                    @for (var i = 0; i < Model.qualifications.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                <span asp-validation-for="qualifications[i].CourseName" class="text-danger"></span>
+                                <input asp-for="qualifications[i].CourseName" class="form-control" />
+                            </td>
+                            <td>
+                                <span asp-validation-for="qualifications[i].University"></span>
+                                <input asp-for="qualifications[i].University" class="form-control" />
+                            </td>
+                            <td>
+                                <span asp-validation-for="qualifications[i].YearofPass"></span>
+                                <input asp-for="qualifications[i].YearofPass" class="form-control" />
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <h2>Add Qualification</h2>
+        <div class="row">
+            <div class="col">
+                <input type="hidden" asp-for="qualifications" id="QualificationsData" />
+                <input id="CourseName" class="form-control" placeholder="Enter course name" />
+            </div>
+            <div class="col">
+                <input id="University" class="form-control" placeholder="Enter university name" />
+            </div>
+            <div class="col">
+                <input id="YearofPass" class="form-control" placeholder="Enter year of pass" />
+            </div>
+            <div class="col">
+                <button type="button" id="addCoursebtn" class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </div>
+    <div class="mb-3 mt-3">
+        <button type="submit" id="btnSubmit" class="btn btn-primary" data-redirect-url="@Url.Action("Index","Home")">Submit</button>
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
+<script>
+    $(document).ready(function () {
+        var currentIndex = 0;
+        $("#addCoursebtn").click(function () {
+           
+            var courseName = $("#CourseName").val();
+            var university = $("#University").val();
+            var yearOfPass = $("#YearofPass").val();
+
+            if (courseName && university && yearOfPass) {
+                var newRow = "<tr>" + "<td>" + courseName + "</td>" +
+                    "<td>" + university + "</td>" + "<td>" + yearOfPass + "</td>" + "</tr>";
+
+                $("#CoursesTable tbody").append(newRow);
+                $("#CourseName").val("");
+                $("#University").val("");
+                $("#YearofPass").val("");
+                currentIndex++;
+            }
+        });
+
+        $("#btnSubmit").click(function () {
+            event.preventDefault();
+            
+            var qualifications = [];
+            var name =$("#name").val();
+            var age = $("#age").val();
+            let isValid = true;
+            
+
+            if (name == "" || age == "") {
+                debugger
+                isValid = false;
+                toastr.warning(`${name == "" ? "Name":"Age"} is required`);
+                return isValid;
+            } 
+
+            if ($("#CoursesTable tbody tr").length === 0) {
+               
+                isValid = false;
+                toastr.error("At least one qualification is required.");
+                return isValid;
+            } else {
+                $("#CoursesTable tbody tr").each(function () {
+                    var courseName = $(this).find("td:eq(0)").text();
+                    var university = $(this).find("td:eq(1)").text();
+                    var yearOfPass = $(this).find("td:eq(2)").text();
+                   
+                    qualifications.push({
+                        CourseName: courseName,
+                        University: university,
+                        YearofPass: yearOfPass
+                    });
+                });
+
+                var data = {
+                    name: name,
+                    age: age,
+                    qualifications: qualifications
+                }
+                var jsonData = JSON.stringify(data)
+                debugger
+                $.ajax({
+                    url: '/register/save',
+                    type: 'POST',
+                    data: { jsonData : jsonData } ,
+                    success: function (response) {
+                       debugger
+                            toastr.success("Data saved successfully");
+                        setTimeout(function () {
+                            var url = $('#btnSubmit').data('redirect-url');
+                            window.location.href = url;
+
+                        }, 1000);
+                    },
+                    error: function (error) {
+                        debugger
+                        toastr.error("An error occured while saving the data");
+                    }
+                });
+            }
+        });
+    });
+
+</script>
